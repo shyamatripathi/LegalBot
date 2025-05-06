@@ -1,15 +1,13 @@
-# Install required libraries (only run once)
-# !pip install sentence-transformers faiss-cpu transformers streamlit
+!pip install sentence-transformers faiss-cpu gradio transformers
 
 # Import libraries
 from sentence_transformers import SentenceTransformer
 from transformers import pipeline
 import faiss
 import numpy as np
-import streamlit as st
+import gradio as gr
 
-# Step 1: Build Knowledge Base
-
+# Step 1: Build Knowledge Base from Legal Texts
 legal_texts = [
     # Dowry and Marriage
     "Is dowry illegal in India? -> Yes, under the Dowry Prohibition Act, 1961, giving, taking, or demanding dowry is illegal and punishable by up to 3 years of imprisonment and fines.",
@@ -76,59 +74,77 @@ legal_texts = [
     "Can a woman demand workplace creche facilities? -> Under the Maternity Benefit (Amendment) Act, 2017, organizations with more than 50 employees must provide creche facilities."
 ]
 
-# Step 2: Encode Knowledge Base
-@st.cache_resource
-def load_embeddings():
-    model = SentenceTransformer('all-MiniLM-L6-v2')
-    embeddings = model.encode(legal_texts)
-    dimension = embeddings.shape[1]
-    index = faiss.IndexFlatL2(dimension)
-    index.add(np.array(embeddings))
-    return model, index
 
-model, index = load_embeddings()
+# Step 2: Encode Knowledge Base with SentenceTransformer
+model = SentenceTransformer('all-MiniLM-L6-v2')
+embeddings = model.encode(legal_texts)
 
-# Step 3: Load Lightweight LLM
-@st.cache_resource
-def load_generator():
-    generator = pipeline('text-generation', model='tiiuae/falcon-7b-instruct', max_new_tokens=100)
-    return generator
+# Step 3: Create FAISS Index for fast retrieval
+dimension = embeddings.shape[1]
+index = faiss.IndexFlatL2(dimension)
+index.add(np.array(embeddings))
 
-generator = load_generator()
+# Step 4: Load a Lightweight LLM for Answer Generation
+generator = pipeline('text-generation', model='tiiuae/falcon-7b-instruct', max_new_tokens=100)
 
-# Step 4: Retrieval + Generation
+# Step 5: Retrieval + Generation Logic (RAG)
 def empowerbot_answer(user_query):
+    # Encode user query
     query_embedding = model.encode([user_query])
+    
+    # Search FAISS index for the most relevant document
     D, I = index.search(np.array(query_embedding), k=1)
     matched_text = legal_texts[I[0][0]]
-    prompt = f"You are an expert legal assistant for women. Based on the following law: {matched_text} \n\nAnswer the user's question: {user_query}"
-    output = generator(prompt)[0]['generated_text']
-    return output
+    
+    # Refined prompt with a clear delimiter
+    prompt = (
+        "You are EmpowerBot, a compassionate and intelligent legal assistant focused on helping women understand their rights. "
+        "You don't just give legal information — you empower the user, validate their concerns, and respond with clarity and care.\n\n"
+        f"Relevant Law: {matched_text}\n"
+        f"User: {user_query}\n"
+        "EmpowerBot:"
+    )
 
-# Step 5: Feedback Loop
+    # Generate answer using the LLM
+    output = generator(prompt)[0]['generated_text']
+
+    # Only return the part after "EmpowerBot:"
+    if "EmpowerBot:" in output:
+        return output.split("EmpowerBot:")[-1].strip()
+    else:
+        return output.strip()
+
+# Step 6: Feedback Loop (User Ratings)
 def feedback_loop(user_query, correct_answer):
+    # Store the user's query and the correct answer for manual feedback
     with open('feedback_data.txt', 'a') as f:
         f.write(f"Query: {user_query}\nCorrect Answer: {correct_answer}\n\n")
+    
+    print("Feedback received, thank you for helping improve EmpowerBot!")
+
+# Step 7: Gradio UI for Chatbot Interface
+def chatbot_interface(user_input):
+    answer = empowerbot_answer(user_input)
+    return answer
+
+# Feedback UI (for rating answers)
+def rate_answer(user_input, correct_answer):
+    feedback_loop(user_input, correct_answer)
     return "Thank you for your feedback!"
 
-# --- Streamlit UI ---
-st.title("EmpowerBot - Women's Legal Assistant")
-st.write("Ask EmpowerBot about women's rights and get reliable legal information.")
+# Gradio Interface (Main Chatbot + Feedback)
+iface = gr.Interface(fn=chatbot_interface, 
+                     inputs=gr.Textbox(label="Ask your question about women's legal rights"), 
+                     outputs=gr.Textbox(label="EmpowerBot's Answer"), 
+                     title="EmpowerBot - Women's Legal Assistant", 
+                     description="Ask EmpowerBot about women's rights and get reliable legal information.")
 
-# User query input
-user_input = st.text_input("Enter your question:")
+feedback_iface = gr.Interface(fn=rate_answer,
+                              inputs=[gr.Textbox(label="Your Query"), gr.Textbox(label="Correct Answer")],
+                              outputs="text",
+                              title="Provide Feedback",
+                              description="Help improve EmpowerBot by providing feedback on answers.")
 
-if st.button("Get Answer"):
-    if user_input.strip() != "":
-        answer = empowerbot_answer(user_input)
-        st.text_area("EmpowerBot's Answer", value=answer, height=200)
-
-# Feedback Section
-st.subheader("Provide Feedback")
-user_query_feedback = st.text_input("Your original query (for feedback):", key="feedback_query")
-correct_answer_feedback = st.text_area("Correct Answer you'd like to suggest:", key="feedback_answer")
-
-if st.button("Submit Feedback"):
-    if user_query_feedback.strip() != "" and correct_answer_feedback.strip() != "":
-        message = feedback_loop(user_query_feedback, correct_answer_feedback)
-        st.success(message)
+# Launch both interfaces
+iface.launch(share=True)  # Main chatbot interface
+feedback_iface.launch(share=True)  # Feedback interface for user ratings
