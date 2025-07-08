@@ -35,6 +35,3 @@ How can I file a workplace harassment complaint?
 Is dowry legal in India?
 
 What are the grounds for divorce?
-
-How to Contribute
-Feel free to open issues or suggest improvements!
