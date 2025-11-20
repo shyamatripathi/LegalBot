@@ -1,37 +1,85 @@
-EmpowerBot: Legal Rights Chatbot for Women
-EmpowerBot is an AI-powered legal assistant designed to help women understand their rights under Indian law.
-It uses Natural Language Processing (NLP) to answer queries about women's rights, such as protection against domestic violence, workplace harassment, dowry laws, divorce rights, and more.
+# EmpowerBot: Legal Rights Chatbot for Women
 
-Features:-
-Retrieval-based Question Answering (QA)
+EmpowerBot is an NLP-powered chatbot designed to make legal information more accessible—especially for women seeking clarity about their rights under Indian law. Using semantic search, embeddings, and lightweight LLM-based response generation, EmpowerBot provides simplified and reliable legal guidance through an intuitive web interface.
 
-Built-in knowledge base with 30+ legal topics
+---
 
-Feedback mechanism for improving responses
+## 🌟 Features
 
-Lightweight, fast, and user-friendly
+* **Retrieval-Based Question Answering (RAG)** using Sentence Transformers + FAISS
+* **Curated knowledge base** covering 30+ legal topics related to women’s rights
+* **Semantic similarity search** for accurate legal information retrieval
+* **LLM-powered answer generation** with a helpful and empathetic tone
+* **Feedback loop integration** for improving responses
+* **Gradio Web UI** for seamless user interaction
 
-How It Works:-
-User enters a question about women’s legal rights.
+---
 
-EmpowerBot finds the most relevant legal information using FAISS and Sentence Transformers.
+##  How It Works
 
-Displays a helpful, simplified answer.
+1. User enters a query related to women’s legal rights.
+2. The query is converted into embeddings using **Sentence Transformers**.
+3. **FAISS** retrieves the closest matching legal text.
+4. A lightweight LLM generates a simplified and supportive response.
+5. Optional feedback helps improve future answers.
 
-Technologies Used:-
-Python
+---
 
-Sentence-Transformers
+##  Tech Stack
 
-FAISS (Facebook AI Similarity Search)
+* Python
+* Sentence Transformers
+* FAISS (Vector Indexing & Search)
+* Transformers / LLM
+* Gradio
+* NumPy
 
-Gradio (for web interface)
+---
 
-Example Questions:-
-What are my rights if I face domestic violence?
+## 📂 Project Structure
 
-How can I file a workplace harassment complaint?
+```
+├── app.py              # Main chatbot + RAG logic
+├── requirements.txt    # Python dependencies
+├── README.md           # Project documentation
+└── .devcontainer/      # Dev container configuration (VS Code)
+```
 
-Is dowry legal in India?
+---
 
-What are the grounds for divorce?
+## ▶️ Running the Project
+
+### 1. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Run the Application
+
+```bash
+python app.py
+```
+
+The Gradio interface will start locally and provide a browser link.
+
+---
+
+##  Example Queries
+
+* “What are my rights if I face domestic violence?”
+* “How do I file a workplace harassment complaint?”
+* “Is dowry legal in India?”
+* “What are the grounds for divorce?”
+
+---
+
+## 📌 Disclaimer
+
+EmpowerBot provides simplified legal information based on publicly available laws. It **does not replace professional legal counsel**.
+
+---
+
+## 🤝 Contributions
+
+Contributions are welcome! Feel free to open an issue or submit a pull request to enhance the knowledge base, improve retrieval accuracy, or refine the UI.
